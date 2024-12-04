@@ -166,21 +166,19 @@ export const updateUserProfile = async (req, res) => {
     }
 };
 
-
-
 export const getUserData = async (req, res) => {
     try {
         const { userType } = req.query;
 
         if (req?.user?._id) {
-            const user = await User.findById(req.user._id).select('-password');
+            const user = await User.findById(req.user._id);
             if (!user) {
                 return res.status(404).send('User not found');
             }
             return res.json(user);
         } else {
             const filter = userType ? { userType } : {};
-            const users = await User.find(filter).select('-password');
+            const users = await User.find(filter);
             return res.json(users);
         }
     } catch (err) {
@@ -215,5 +213,24 @@ export const getAllUsers = async (req, res) => {
     } catch (err) {
         console.error(err); // Log the error for debugging
         res.status(500).send('Server error');
+    }
+};
+export const getUsersByType = async (req, res) => {
+    try {
+        const { userType } = req.params;
+        if (!['craftsman', 'client', 'admin'].includes(userType)) {
+            return res.status(400).json({ message: 'Invalid user type. Use "craftsman", "client", or "admin".' });
+        }
+
+        const users = await User.find({ userType });
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: `No users found with user type ${userType}` });
+        }
+
+        return res.json(users);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error', error });
     }
 };

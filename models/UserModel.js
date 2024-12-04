@@ -15,6 +15,8 @@ const userSchema = new Schema({
     },
     password: {
         type: String,
+        required: true,
+        select: false 
     },
     phoneNumber: {
         type: String,
@@ -27,7 +29,7 @@ const userSchema = new Schema({
     profilePicture: {
         type: String,
         default:
-            "https://cdn.icon-icons.com/icons2/1378/PNG/512/avatardefault_92824.png",
+            "https://images.pexels.com/photos/9072375/pexels-photo-9072375.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
     },
     isVerified: {
         type: Boolean,
