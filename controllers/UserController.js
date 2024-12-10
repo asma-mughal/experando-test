@@ -89,14 +89,13 @@ export const registerOAuth = async (req, res) => {
 };
 export const loginUser = async (req, res) => {
     const { email, password, userType } = req.body;
-
+console.log(req.body.password)
     try {
         const user = await User.findOne({ email });
 
         if (!user) {
             return res.status(400).json({ message: 'Invalid email or password' });
         }
-
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({ message: 'Invalid email or password' });
@@ -108,6 +107,7 @@ export const loginUser = async (req, res) => {
 
         res.status(200).json({ message: 'Login successful', token, user });
     } catch (error) {
+        console.log(error)
         res.status(500).json({ message: 'Server error', error });
     }
 };
@@ -171,7 +171,7 @@ export const getUserData = async (req, res) => {
         const { userType } = req.query;
 
         if (req?.user?._id) {
-            const user = await User.findById(req.user._id);
+            const user = await User.findById(req.user._id).select('-password');
             if (!user) {
                 return res.status(404).send('User not found');
             }
@@ -208,7 +208,8 @@ export const deleteUser = async (req, res) => {
 };
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find();
+        const users = await User.find().select('-password');
+
         return res.json(users);
     } catch (err) {
         console.error(err); // Log the error for debugging
@@ -222,7 +223,7 @@ export const getUsersByType = async (req, res) => {
             return res.status(400).json({ message: 'Invalid user type. Use "craftsman", "client", or "admin".' });
         }
 
-        const users = await User.find({ userType });
+        const users = await User.find({ userType }).select('-password');
 
         if (users.length === 0) {
             return res.status(404).json({ message: `No users found with user type ${userType}` });
