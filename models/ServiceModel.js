@@ -1,81 +1,80 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const serviceSchema = new mongoose.Schema({
+const serviceSchema = new mongoose.Schema(
+  {
     user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     jobName: {
-        type: String,
-        required: true,
-        default: 'New Job'
+      type: String,
+      required: true,
+      default: "New Job",
     },
     ownerName: {
-        type: String,
-        required: true,
-        default: 'Anonymous'
+      type: String,
+      required: true,
+      default: "Anonymous",
     },
     jobDescription: {
-        type: String,
-        required: true,
-        default: 'No description provided'
+      type: String,
+      required: true,
+      default: "No description provided",
     },
     price: {
-        type: Number,
-        required: true,
-        default: 0
+      type: Number,
+      default: 0,
     },
     urgency: {
-        type: String,
-        enum: [
-            'Urgent',
-            'After Consultation',
-            'Within 2 weeks',
-            'Within a month',
-            'Within a few months',
-        ],
-        default: 'After Consultation',
+      type: String,
+      enum: [
+        "Urgent",
+        "After Consultation",
+        "Within 2 weeks",
+        "Within a month",
+        "Within a few months",
+      ],
+      default: "After Consultation",
     },
     location: {
-        type: String,
-        required: true,
-        default: 'Not specified'
+      type: String,
+      required: true,
+      default: "Not specified",
     },
     startDate: {
-        type: Date,
-        default: Date.now
+      type: Date,
+      default: Date.now,
     },
     endDate: {
-        type: Date,
+      type: Date,
     },
     status: {
-        type: String,
-        enum: [
-            'Pending',
-            'InProgress',
-            'Completed',
-            'Cancelled'
-        ],
-        default: 'Pending'
+      type: String,
+      enum: ["Pending", "InProgress", "Completed", "Cancelled"],
+      default: "Pending",
     },
     ratings: {
-        type: [Number],
-        default: []
+      type: [Number],
+      default: [],
     },
-    pictures: [{
+    pictures: [
+      {
         type: String,
-        default: []
-    }],
+        default: [],
+      },
+    ],
     categoryId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Category',
-        default: null
-    }
-}, {
-    timestamps: true
-});
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-const Service = mongoose.model('Service', serviceSchema);
+const Service = mongoose.model("Service", serviceSchema);
 
 export default Service;
