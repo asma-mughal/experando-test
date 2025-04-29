@@ -58,6 +58,10 @@ const serviceSchema = new mongoose.Schema(
       type: [Number],
       default: [],
     },
+    promoted: {
+      type: Boolean,
+      default: false,
+    },
     pictures: [
       {
         type: String,

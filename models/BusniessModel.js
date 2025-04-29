@@ -1,82 +1,96 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
-const businessProfileSchema = new Schema({
+const businessProfileSchema = new Schema(
+  {
     userId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     ownerName: {
-        type: String,
-        required: true,
-        trim: true,
-        default: ' '
+      type: String,
+      required: true,
+      trim: true,
+      default: " ",
     },
     businessName: {
-        type: String,
-        required: true,
-        trim: true,
-        default: ' '
+      type: String,
+      required: true,
+      trim: true,
+      default: " ",
     },
     introduction: {
-        type: String,
-        required: true,
-        trim: true,
-        default: ' '
+      type: String,
+      required: true,
+      trim: true,
+      default: " ",
     },
     location: {
-        type: String,
-        required: true,
-        trim: true,
-        default: ' '
+      type: String,
+      required: true,
+      trim: true,
+      default: " ",
     },
-    pictures: [{
+    pictures: [
+      {
         type: String,
         trim: true,
-        default: []
-    }],
+        default: [],
+      },
+    ],
     profilePicture: {
-        type: String,
-        trim: true,
-        default: ' '
+      type: String,
+      trim: true,
+      default: " ",
     },
     licenseImage: {
-        type: String,
-        trim: true,
-        default: ' '
+      type: String,
+      trim: true,
+      default: " ",
     },
     status: {
-        type: String,
-        enum: ['active', 'inactive', 'pending'],
-        default: 'pending'
+      type: String,
+      enum: ["active", "inactive", "pending"],
+      default: "pending",
     },
-    tags: [{
-        type: String,
-        trim: true
-    }],
-    schedulingPolicy: {
+    promoted: {
+      type: Boolean,
+      default: false,
+    },
+    tags: [
+      {
         type: String,
         trim: true,
-        default: ' '
+      },
+    ],
+    schedulingPolicy: {
+      type: String,
+      trim: true,
+      default: " ",
     },
     startDate: {
-        type: Date,
-        required: true,
-        default: Date.now
+      type: Date,
+      required: true,
+      default: Date.now,
     },
     endDate: {
-        type: Date
+      type: Date,
     },
     categoryId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Category',
-        default: null
-    }
-}, {
-    timestamps: true
-});
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-const BusinessProfile = mongoose.model('BusinessProfile', businessProfileSchema);
+const BusinessProfile = mongoose.model(
+  "BusinessProfile",
+  businessProfileSchema
+);
 export default BusinessProfile;
