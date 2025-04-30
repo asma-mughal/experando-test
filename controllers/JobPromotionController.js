@@ -105,11 +105,7 @@ export const subscribeToJobPromotion = async (req, res) => {
       .json({ error: "Internal Server Error", details: error.message });
   }
 };
-const planDurations = {
-  basic: 7,
-  standard: 14,
-  premium: 30,
-};
+
 export const subscriptionSuccess = async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.retrieve(

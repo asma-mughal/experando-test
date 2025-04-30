@@ -41,6 +41,7 @@ const jobPromotionSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: false },
     promotionEndDate: {
       type: Date,
+      required: true, // Ensure this is always present for TTL to work
     },
     paymentStatus: {
       type: String,
@@ -52,5 +53,8 @@ const jobPromotionSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// TTL Index: expires immediately after `promotionEndDate`
+jobPromotionSchema.index({ promotionEndDate: 1 }, { expireAfterSeconds: 0 });
 
 export const JobPromotion = mongoose.model("JobPromotion", jobPromotionSchema);
