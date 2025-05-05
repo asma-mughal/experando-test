@@ -165,10 +165,44 @@ export const subscriptionSuccess = async (req, res) => {
 
 const cancelStripeSubscription = async (subscriptionId) => {
   try {
-    await stripe.subscriptions.cancel(subscriptionId);
+    const canceledSubscription = await stripe.subscriptions.cancel(
+      subscriptionId
+    );
+    const sessionList = await stripe.checkout.sessions.list({
+      subscription: subscriptionId,
+      limit: 1,
+    });
+
+    const session = sessionList.data[0];
+
+    if (!session || !session.metadata) {
+      console.warn("No session metadata found for canceled subscription.");
+      return true;
+    }
+
+    const { userId, plan, id, type } = session.metadata;
+    await JobPromotion.findOneAndUpdate(
+      {
+        user: userId,
+        promotionPackage: plan.charAt(0).toUpperCase() + plan.slice(1),
+        promotionType: type,
+        isActive: true,
+      },
+      {
+        isActive: false,
+        paymentStatus: "Cancelled",
+        promotionEndDate: new Date(),
+      }
+    );
+    if (type === "Service") {
+      await Service.findByIdAndUpdate(id, { promoted: false });
+    } else if (type === "Business") {
+      await BusinessProfile.findByIdAndUpdate(id, { promoted: false });
+    }
+
     return true;
   } catch (error) {
-    console.error("Error cancelling subscription:", error);
+    console.error("Error cancelling subscription and updating DB:", error);
     return false;
   }
 };
