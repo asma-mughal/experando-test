@@ -108,20 +108,24 @@ export const updateService = async (req, res) => {
 };
 export const getAllServices = async (req, res) => {
   const { id, userId } = req.query;
+
+  const userPopulateOptions = {
+    path: 'user',
+    select: 'fullName email phoneNumber userType profilePicture isVerified jobsDone totalHires stripeCustomerId googleId facebookId createdAt updatedAt'
+  };
+
   try {
     if (id) {
-      const service = await Service.findById(id).populate("user");
+      const service = await Service.findById(id).populate(userPopulateOptions);
       if (!service) {
         return res.status(200).json([]);
       }
       return res.status(200).json(service);
     } else if (userId) {
-      const userServices = await Service.find({ user: userId }).populate(
-        "user"
-      );
+      const userServices = await Service.find({ user: userId }).populate(userPopulateOptions);
       return res.status(200).json(userServices);
     } else {
-      const services = await Service.find().populate("user");
+      const services = await Service.find().populate(userPopulateOptions);
       return res.status(200).json(services);
     }
   } catch (error) {

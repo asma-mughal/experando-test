@@ -26,6 +26,7 @@ export async function createPaymentIntent(req, res) {
             });
 
             user.stripeCustomerId = newCustomer.id;
+         
             await user.save();
             customerId = newCustomer.id;
         }
