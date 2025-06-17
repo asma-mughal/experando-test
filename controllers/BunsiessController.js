@@ -175,5 +175,19 @@ export const updateBusiness = async (req, res) => {
     }
 };
 
-
-
+export const deleteAllBusniess= async (req, res) => {
+  try {
+    const result = await BusinessProfile.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} BusinessProfile`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ 
+      message: "Error deleting BusinessProfile", 
+      error: error.message 
+    });
+  }
+};

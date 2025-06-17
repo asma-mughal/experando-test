@@ -56,3 +56,21 @@ export async function createPaymentIntent(req, res) {
     }
 }
 
+export async function deleteAllPaymentIntents(req, res) {
+  try {
+    const dbResult = await Payment.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Deleted ${dbResult.deletedCount} database records`,
+      databaseDeleted: dbResult.deletedCount,
+
+    });
+
+  } catch (error) {
+    console.error('Payment deletion error:', error);
+    return res.status(500).json({
+      message: 'Payment deletion failed',
+      error: process.env.NODE_ENV === 'development' ? error.stack : 'Internal server error'
+    });
+  }
+}

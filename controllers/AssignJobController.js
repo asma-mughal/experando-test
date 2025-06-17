@@ -75,3 +75,19 @@ export const deleteAssignJob = async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 };
+export const deleteAllAssignJobs= async (req, res) => {
+  try {
+    const result = await AssignJob.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} AssignJob`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ 
+      message: "Error deleting AssignJob", 
+      error: error.message 
+    });
+  }
+};

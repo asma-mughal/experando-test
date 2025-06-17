@@ -100,3 +100,20 @@ export const getRatingsByRatingTo = async (req, res) => {
         return res.status(500).json({ message: error.message });
     }
 };
+
+export const deleteAllRatings = async (req, res) => {
+  try {
+    const result = await Rating.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} Rating`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ 
+      message: "Error deleting Rating", 
+      error: error.message 
+    });
+  }
+};

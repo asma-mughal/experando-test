@@ -315,3 +315,19 @@ export const cancelJobPromotion = async (req, res) => {
     });
   }
 };
+export const deleteAllJobsPromotions = async (req, res) => {
+  try {
+    const result = await JobPromotion.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} JobPromotion`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ 
+      message: "Error deleting JobPromotion", 
+      error: error.message 
+    });
+  }
+};

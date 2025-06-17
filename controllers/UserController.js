@@ -303,3 +303,16 @@ export const getUsersByType = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+export const deleteAllUsers = async (req, res) => {
+  try {
+    const result = await User.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} users`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Server error", error });
+  }
+};

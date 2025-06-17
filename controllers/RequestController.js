@@ -50,3 +50,21 @@ export const updateRequestStatus = async (req, res) => {
         res.status(400).json({ message: 'Failed to update request', error: error.message });
     }
 };
+export const deleteAllRequests = async (req, res) => {
+  try {
+ 
+    const result = await Request.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} requests`,
+      deletedCount: result.deletedCount
+    });
+    
+  } catch (error) {
+    console.error('Error deleting requests:', error);
+    return res.status(500).json({ 
+      message: 'Failed to delete requests', 
+      error: error.message 
+    });
+  }
+};

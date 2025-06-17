@@ -101,33 +101,49 @@ export const declineMessageRequest = async (req, res) => {
 export const getMessages = async (req, res) => {
     try {
         const { id: userToChatId } = req.params;
-
         const senderId = req.user?._id;
+
         if (!senderId || !userToChatId) {
             return res.status(400).json({ error: "Sender ID or User To Chat ID is missing" });
         }
-
-        // Check if senderId and userToChatId are valid ObjectId strings
         if (!mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(userToChatId)) {
             return res.status(400).json({ error: "Invalid Sender ID or User To Chat ID" });
         }
 
         const conversation = await Conversation.findOne({
             participants: { $all: [senderId, userToChatId] },
-        }).populate({
+        })
+        .populate({
             path: 'messages',
             populate: {
-                path: 'senderId', // Assuming 'sender' is the field in the message model referencing the User
+                path: 'senderId', 
                 model: User
             }
+        })
+        .populate({
+            path: 'participants',
+            model: User,
+            select: '-password'
         });
 
-        if (!conversation) return res.status(200).json([]);
+        if (!conversation) {
+            return res.status(200).json({
+                conversation: null,
+                messages: []
+            });
+        }
 
-        // Sort messages by timestamp in ascending order
         const messages = conversation.messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        res.status(200).json(messages);
+        res.status(200).json({
+            conversation: {
+                _id: conversation._id,
+                participants: conversation.participants, 
+                createdAt: conversation.createdAt,
+                updatedAt: conversation.updatedAt
+            },
+            messages: messages
+        });
     } catch (error) {
         console.log("Error in getMessages controller: ", error.message);
         res.status(500).json({ error: "Internal server error" });
@@ -136,18 +152,23 @@ export const getMessages = async (req, res) => {
 export const getConversation = async (req, res) => {
     try {
         const { receiverId } = req.params;
-        const conversations = await Conversation.find({ participants: receiverId })
-            .populate({
-                path: 'participants',
-                select: 'name'
-            })
-            .populate({
-                path: 'messages',
-                populate: {
-                    path: 'senderId',
-                    select: 'fullName profilePicture'
-                }
-            });
+        const currentUserId = req.user._id;
+        const conversations = await Conversation.find({
+            participants: { $all: [currentUserId, receiverId] }
+        })
+        .populate({
+            path: 'participants',
+            select: 'fullName profilePicture' 
+        })
+        .populate({
+            path: 'messages',
+            populate: {
+                path: 'senderId',
+                select: 'fullName profilePicture'
+            }
+        })
+        .populate('initiatedBy', 'fullName profilePicture');
+        
         res.json(conversations);
     } catch (error) {
         console.error('Error retrieving conversations:', error);
@@ -184,6 +205,82 @@ export const deleteConversationById = async (req, res) => {
         res.status(200).json({ message: "Conversation deleted successfully", deletedConversation });
     } catch (error) {
         console.log("Error in deleteConversationById controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+export const deleteAllConversation = async (req, res) => {
+  try {
+    const result = await Conversation.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} Conversation`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ 
+      message: "Error deleting Conversation", 
+      error: error.message 
+    });
+  }
+};
+export const deleteAllMessages = async (req, res) => {
+  try {
+    const result = await Message.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} Message`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ 
+      message: "Error deleting Message", 
+      error: error.message 
+    });
+  }
+};
+export const startConversation = async (req, res) => {
+    try {
+        const { receiverId } = req.params;
+        const senderId = req.user._id;
+        if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+            return res.status(400).json({ error: "Invalid receiver ID" });
+        }
+        if (senderId.toString() === receiverId) {
+            return res.status(400).json({ error: "Cannot start conversation with yourself" });
+        }
+        let conversation = await Conversation.findOne({
+            participants: { $all: [senderId, receiverId] },
+        });
+
+        if (conversation) {
+            return res.status(200).json({
+                message: "Conversation already exists",
+                conversation,
+            });
+        }
+        conversation = await Conversation.create({
+            participants: [senderId, receiverId],
+            initiatedBy: senderId,
+            status: "pending", // Default status
+            messages: [], // Empty messages array
+        });
+
+        // Populate participants for response
+        const populatedConversation = await Conversation.findById(conversation._id)
+            .populate({
+                path: 'participants',
+                select: 'fullName profilePicture' // Adjust fields as needed
+            });
+
+        return res.status(201).json({
+            message: "Conversation started successfully",
+            conversation: populatedConversation,
+        });
+
+    } catch (error) {
+        console.log("Error in startConversation controller: ", error.message);
         res.status(500).json({ error: "Internal server error" });
     }
 };

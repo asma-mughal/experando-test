@@ -132,3 +132,19 @@ export const getAllServices = async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 };
+export const deleteAllServices = async (req, res) => {
+  try {
+    const result = await Service.deleteMany({});
+    
+    return res.status(200).json({
+      message: `Successfully deleted ${result.deletedCount} services`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ 
+      message: "Error deleting services", 
+      error: error.message 
+    });
+  }
+};
