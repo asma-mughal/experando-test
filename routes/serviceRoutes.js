@@ -6,6 +6,6 @@ const router = express.Router();
 router.post('/', createService);
 router.get('/', getAllServices);
 router.put('/', updateService);
-router.delete('/', deleteService);
+router.delete('/:serviceId', deleteService);
 router.delete('/all', deleteAllServices);
 export default router;

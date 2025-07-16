@@ -14,10 +14,10 @@ export const registerUser = async (req, res) => {
   } = req.body;
 
   try {
-    if (!fullName || !email || !userType) {
+    if (!fullName || !email || !userType ||  !password) {
       return res
         .status(400)
-        .json({ message: "Full name, email, and user type are required" });
+        .json({ message: "Full name, email, password , and user type are required" });
     }
 
     if (!/^\S+@\S+\.\S+$/.test(email)) {
