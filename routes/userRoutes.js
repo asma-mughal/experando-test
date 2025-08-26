@@ -7,7 +7,7 @@ router.post('/register', registerUser);
 router.post('/registerOauth', registerOAuth);
 router.post('/login', loginUser);
 router.put('/:userId', authMiddleware, updateUserProfile);
-router.get('/', authMiddleware, getUserData);
+router.get('/', authMiddleware, getUserData); //password admin : 12345678
 router.get('/all', getAllUsers);
 router.delete('/:id', deleteUser)
 router.get('/userType/:userType', getUsersByType)

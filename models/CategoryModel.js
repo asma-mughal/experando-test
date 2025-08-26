@@ -14,7 +14,6 @@ const categorySchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true,
-        enum: ['build', 'renovation and refurbishment', 'vehicles']
     }
 }, { timestamps: true });
 
