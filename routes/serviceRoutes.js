@@ -5,7 +5,7 @@ import { createService, deleteAllServices, deleteService, getAllServices, update
 const router = express.Router();
 router.post('/', createService);
 router.get('/', getAllServices);
-router.put('/', updateService);
+router.put('/:serviceId', updateService);
 router.delete('/:serviceId', deleteService);
 router.delete('/all', deleteAllServices);
 export default router;

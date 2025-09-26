@@ -86,7 +86,7 @@ export const updateService = async (req, res) => {
 
   try {
     // Find the service by ID
-    const service = await Service.findById(req.query.id);
+    const service = await Service.findById(req.params.serviceId);
     if (!service) {
       return res.status(404).json({ error: "Service not found" });
     }
