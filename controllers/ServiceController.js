@@ -111,28 +111,44 @@ export const getAllServices = async (req, res) => {
   const { id, userId } = req.query;
 
   const userPopulateOptions = {
-    path: 'user',
-    select: 'fullName email phoneNumber userType profilePicture isVerified jobsDone totalHires stripeCustomerId googleId facebookId createdAt updatedAt'
+    path: "user",
+    select:
+      "fullName email phoneNumber userType profilePicture isVerified isActive jobsDone totalHires stripeCustomerId googleId facebookId createdAt updatedAt",
   };
 
   try {
     if (id) {
       const service = await Service.findById(id).populate(userPopulateOptions);
-      if (!service) {
+
+      if (!service || !service.user?.isActive) {
         return res.status(200).json([]);
       }
+
       return res.status(200).json(service);
     } else if (userId) {
-      const userServices = await Service.find({ user: userId }).populate(userPopulateOptions);
-      return res.status(200).json(userServices);
+      const userServices = await Service.find({ user: userId }).populate(
+        userPopulateOptions
+      );
+
+      const activeServices = userServices.filter(
+        (s) => s.user && s.user.isActive
+      );
+
+      return res.status(200).json(activeServices);
     } else {
       const services = await Service.find().populate(userPopulateOptions);
-      return res.status(200).json(services);
+
+      const activeServices = services.filter(
+        (s) => s.user && s.user.isActive
+      );
+
+      return res.status(200).json(activeServices);
     }
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
 };
+
 export const deleteAllServices = async (req, res) => {
   try {
     const result = await Service.deleteMany({});

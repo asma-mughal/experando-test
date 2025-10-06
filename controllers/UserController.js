@@ -66,7 +66,6 @@ export const registerUser = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
-
 export const registerOAuth = async (req, res) => {
   const { fullName, email, userType, oauthId, provider } = req.body;
 
@@ -136,19 +135,26 @@ export const registerOAuth = async (req, res) => {
 };
 export const loginUser = async (req, res) => {
   const { email, password, userType } = req.body;
+
   try {
     const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
+    if (user.isActive === false) {
+      return res.status(403).json({ message: "Your account has been blocked. Please contact support." });
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
+
     if (user.userType !== userType) {
       return res.status(400).json({ message: "User type mismatch" });
     }
+
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET
@@ -160,7 +166,6 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
-
 export const updateUserProfile = async (req, res) => {
   const { userId } = req.params;
   const {
@@ -171,6 +176,7 @@ export const updateUserProfile = async (req, res) => {
     jobsDone,
     totalHires,
     email,
+    isActive, 
   } = req.body;
 
   try {
@@ -179,9 +185,7 @@ export const updateUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Handle password update
     if (currentPassword && newPassword) {
-      // Verify the current password
       const isPasswordValid = await bcrypt.compare(
         currentPassword,
         user.password
@@ -192,12 +196,11 @@ export const updateUserProfile = async (req, res) => {
           .json({ message: "Current password is incorrect" });
       }
 
-      // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       user.password = hashedPassword;
     }
 
-    // Handle email update
+    // Email update
     if (email) {
       const existingUser = await User.findOne({ email });
       if (existingUser && existingUser._id.toString() !== userId) {
@@ -205,10 +208,12 @@ export const updateUserProfile = async (req, res) => {
       }
       user.email = email;
     }
+    if (typeof isActive === "boolean") {
+      user.isActive = isActive;
+    }
+    user.fullName = fullName || user.fullName;
+    user.profilePicture = profilePicture || user.profilePicture;
 
-    user.profilePicture = profilePicture;
-
-    // Increment jobsDone and totalHires if provided
     if (jobsDone) {
       user.jobsDone = (user.jobsDone || 0) + jobsDone;
     }
@@ -217,17 +222,13 @@ export const updateUserProfile = async (req, res) => {
       user.totalHires = (user.totalHires || 0) + totalHires;
     }
 
-    // Update user details
-    user.fullName = fullName || user.fullName;
-
     await user.save();
     res.status(200).json({ message: "User updated successfully", user });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ message: "Server error", error });
   }
 };
-
 export const getUserData = async (req, res) => {
   try {
     const { userType } = req.query;
@@ -247,7 +248,6 @@ export const getUserData = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
-
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;

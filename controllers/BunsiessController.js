@@ -38,7 +38,6 @@ export const addBusiness = async (req, res) => {
     }
 };
 
-
 export const deleteBusiness = async (req, res) => {
     try {
         const { id } = req.params;
@@ -54,87 +53,96 @@ export const deleteBusiness = async (req, res) => {
     }
 };
 export const getBusiness = async (req, res) => {
-    const { id, userId } = req.query;
-    try {
-        if (id) {
-            const profile = await BusinessProfile.aggregate([
-                { $match: { _id: new moongose.Types.ObjectId(id) } },
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'userId',
-                        foreignField: '_id',
-                        as: 'userDetails'
-                    }
-                },
-                { $unwind: '$userDetails' },
-                {
-                    $lookup: {
-                        from: 'ratings',
-                        localField: 'userId',
-                        foreignField: 'ratingTo',
-                        as: 'ratings'
-                    }
-                }
-            ]);
+  const { id, userId } = req.query;
 
-            if (!profile.length) {
-                return res.status(200).json([]); // Return empty array instead of 404
-            }
+  try {
+    if (id) {
+      const profile = await BusinessProfile.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(id) } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        { $unwind: "$userDetails" },
 
-            return res.status(200).json(profile[0]);
-        } else if (userId) {
-            const profiles = await BusinessProfile.aggregate([
-                { $match: { userId: new moongose.Types.ObjectId(userId) } },
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'userId',
-                        foreignField: '_id',
-                        as: 'userDetails'
-                    }
-                },
-                { $unwind: '$userDetails' },
-                {
-                    $lookup: {
-                        from: 'ratings',
-                        localField: 'userId',
-                        foreignField: 'ratingTo',
-                        as: 'ratings'
-                    }
-                }
-            ]);
+        { $match: { "userDetails.isActive": true } },
 
-            return res.status(200).json(profiles);
-        } else {
-            const profiles = await BusinessProfile.aggregate([
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'userId',
-                        foreignField: '_id',
-                        as: 'userDetails'
-                    }
-                },
-                { $unwind: '$userDetails' },
-                {
-                    $lookup: {
-                        from: 'ratings',
-                        localField: 'userId',
-                        foreignField: 'ratingTo',
-                        as: 'ratings'
-                    }
-                }
-            ]);
+        {
+          $lookup: {
+            from: "ratings",
+            localField: "userId",
+            foreignField: "ratingTo",
+            as: "ratings",
+          },
+        },
+      ]);
 
-            return res.status(200).json(profiles);
-        }
-    } catch (err) {
-        console.log(err);
-        return res.status(500).json({ message: err.message });
+      if (!profile.length) {
+        return res.status(200).json([]);
+      }
+
+      return res.status(200).json(profile[0]);
+    } else if (userId) {
+      const profiles = await BusinessProfile.aggregate([
+        { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        { $unwind: "$userDetails" },
+
+        { $match: { "userDetails.isActive": true } },
+
+        {
+          $lookup: {
+            from: "ratings",
+            localField: "userId",
+            foreignField: "ratingTo",
+            as: "ratings",
+          },
+        },
+      ]);
+
+      return res.status(200).json(profiles);
+    } else {
+      const profiles = await BusinessProfile.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails",
+          },
+        },
+        { $unwind: "$userDetails" },
+
+        { $match: { "userDetails.isActive": true } },
+
+        {
+          $lookup: {
+            from: "ratings",
+            localField: "userId",
+            foreignField: "ratingTo",
+            as: "ratings",
+          },
+        },
+      ]);
+
+      return res.status(200).json(profiles);
     }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ message: err.message });
+  }
 };
-
 
 export const updateBusiness = async (req, res) => {
     try {

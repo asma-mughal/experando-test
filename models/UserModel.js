@@ -49,7 +49,11 @@ const userSchema = new Schema({
     },
     stripeCustomerId: {
         type: String,
-    }
+    },
+     isActive: {
+      type: Boolean,
+      default: true, 
+    },
 }, {
     timestamps: true,
 });
