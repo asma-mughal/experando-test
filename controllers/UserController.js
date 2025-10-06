@@ -142,6 +142,8 @@ export const loginUser = async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
+
+    // Check if user is blocked
     if (user.isActive === false) {
       return res.status(403).json({ message: "Your account has been blocked. Please contact support." });
     }
@@ -166,6 +168,7 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 export const updateUserProfile = async (req, res) => {
   const { userId } = req.params;
   const {
