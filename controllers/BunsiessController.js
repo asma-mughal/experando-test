@@ -1,5 +1,5 @@
 import BusinessProfile from "../models/BusniessModel.js";
-import moongose from "mongoose";
+import mongoose from "mongoose";
 export const addBusiness = async (req, res) => {
     try {
         const {

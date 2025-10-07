@@ -15,6 +15,9 @@ const authMiddleware = async (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: "Invalid token." });
     }
+    if(!req.user.isActive){
+      return res.status(404).json({ message: "Blcoked User" });
+    }
     next();
   } catch (error) {
     res.status(401).json({ message: "Invalid token.", error });

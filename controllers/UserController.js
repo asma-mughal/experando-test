@@ -235,12 +235,15 @@ export const updateUserProfile = async (req, res) => {
 export const getUserData = async (req, res) => {
   try {
     const { userType } = req.query;
-
     if (req?.user?._id) {
       const user = await User.findById(req.user._id).select("-password");
+     
       if (!user) {
         return res.status(404).send("User not found");
       }
+       if (!user.isActive) {
+      return res.status(403).json({ message: "Your account has been blocked. Please contact support." });
+    }
       return res.json(user);
     } else {
       const filter = userType ? { userType } : {};
@@ -299,6 +302,8 @@ export const getUsersByType = async (req, res) => {
         .status(404)
         .json({ message: `No users found with user type ${userType}` });
     }
+
+    
 
     return res.json(users);
   } catch (error) {

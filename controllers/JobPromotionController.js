@@ -10,8 +10,7 @@ const stripe = Stripe(
 export const subscribeToJobPromotion = async (req, res) => {
   const { id, type, plan } = req.query;
   const { user } = req;
-  const userId = user?.id;
-
+  const userId = user?._id;
   if (!id || !type || !plan) {
     return res.status(400).json({ error: "ID, type, and plan are required" });
   }

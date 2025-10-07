@@ -10,7 +10,6 @@ import categoryRoutes from "../routes/categoryRoutes.js";
 import assignJobRoutes from "../routes/assignJobRoutes.js";
 import jobPromotionRoutes from "../routes/jobPromotion.js";
 import express from "express";
-import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
 router.use("/user", userRoutes);
 router.use("/busniess", busniessRoutes);
