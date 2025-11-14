@@ -21,7 +21,6 @@ export async function createPaymentIntent(req, res) {
                 email: user.email,
                 name: user.fullName,
             });
-          console.log(newCustomer, newCustomer.id)
             user.stripeCustomerId = newCustomer.id;
          
             await user.save();
