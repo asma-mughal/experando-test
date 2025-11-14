@@ -8,10 +8,7 @@ export async function createPaymentIntent(req, res) {
     const amount = 500;
 
     try {
-        const client = await User.findOne({ _id: paymentTo, userType: 'client' });
-        if (!client) {
-            return res.status(400).json({ message: "Payment receiver must be a client" });
-        }
+        const client = await User.findOne({ _id: paymentTo, userType: 'client' })
 
         const user = await User.findById(customer);
         if (!user) {
@@ -24,7 +21,7 @@ export async function createPaymentIntent(req, res) {
                 email: user.email,
                 name: user.fullName,
             });
-
+          console.log(newCustomer, newCustomer.id)
             user.stripeCustomerId = newCustomer.id;
          
             await user.save();
