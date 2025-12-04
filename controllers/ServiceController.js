@@ -55,7 +55,6 @@ export const createService = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 export const deleteService = async (req, res) => {
   try {
   
@@ -70,7 +69,6 @@ export const deleteService = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 export const updateService = async (req, res) => {
   const {
     jobName,
@@ -148,7 +146,6 @@ export const getAllServices = async (req, res) => {
     return res.status(400).json({ error: error.message });
   }
 };
-
 export const deleteAllServices = async (req, res) => {
   try {
     const result = await Service.deleteMany({});

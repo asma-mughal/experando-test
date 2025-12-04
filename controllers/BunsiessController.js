@@ -1,5 +1,6 @@
 import BusinessProfile from "../models/BusniessModel.js";
 import mongoose from "mongoose";
+import Rating from "../models/ratingModel.js";
 export const addBusiness = async (req, res) => {
     try {
         const {
@@ -37,7 +38,6 @@ export const addBusiness = async (req, res) => {
         res.status(400).json({ message: err.message });
     }
 };
-
 export const deleteBusiness = async (req, res) => {
     try {
         const { id } = req.params;
@@ -54,96 +54,37 @@ export const deleteBusiness = async (req, res) => {
 };
 export const getBusiness = async (req, res) => {
   const { id, userId } = req.query;
-
   try {
-    if (id) {
-      const profile = await BusinessProfile.aggregate([
-        { $match: { _id: new mongoose.Types.ObjectId(id) } },
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "userDetails",
-          },
-        },
-        { $unwind: "$userDetails" },
-
-        { $match: { "userDetails.isActive": true } },
-
-        {
-          $lookup: {
-            from: "ratings",
-            localField: "userId",
-            foreignField: "ratingTo",
-            as: "ratings",
-          },
-        },
-      ]);
-
-      if (!profile.length) {
-        return res.status(200).json([]);
-      }
-
-      return res.status(200).json(profile[0]);
-    } else if (userId) {
-      const profiles = await BusinessProfile.aggregate([
-        { $match: { userId: new mongoose.Types.ObjectId(userId) } },
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "userDetails",
-          },
-        },
-        { $unwind: "$userDetails" },
-
-        { $match: { "userDetails.isActive": true } },
-
-        {
-          $lookup: {
-            from: "ratings",
-            localField: "userId",
-            foreignField: "ratingTo",
-            as: "ratings",
-          },
-        },
-      ]);
-
-      return res.status(200).json(profiles);
-    } else {
-      const profiles = await BusinessProfile.aggregate([
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "userDetails",
-          },
-        },
-        { $unwind: "$userDetails" },
-
-        { $match: { "userDetails.isActive": true } },
-
-        {
-          $lookup: {
-            from: "ratings",
-            localField: "userId",
-            foreignField: "ratingTo",
-            as: "ratings",
-          },
-        },
-      ]);
-
-      return res.status(200).json(profiles);
+    let query = {};
+    if (id && mongoose.Types.ObjectId.isValid(id)) {
+      query._id = id;
+    } else if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      query.userId = userId;
     }
+    const businesses = await BusinessProfile.find(query)
+      .populate({
+        path: "userId",
+        select: "fullName email profilePicture isActive",
+      });
+    const activeBusinesses = businesses.filter(b => b.userId);
+
+    if (!activeBusinesses.length) return res.status(200).json([]);
+    const businessesWithRatings = await Promise.all(
+      activeBusinesses.map(async (b) => {
+        const ratings = await Rating.find({ ratingTo: b.userId._id }); 
+        return {
+          ...b.toObject(),
+          ratings,
+        };
+      })
+    );
+    if (id) return res.status(200).json(businessesWithRatings[0]);
+    return res.status(200).json(businessesWithRatings);
   } catch (err) {
-    console.log(err);
+    console.log("getBusiness error:", err);
     return res.status(500).json({ message: err.message });
   }
 };
-
 export const updateBusiness = async (req, res) => {
     try {
         const { id } = req.params;
@@ -182,7 +123,6 @@ export const updateBusiness = async (req, res) => {
         res.status(400).json({ message: err.message });
     }
 };
-
 export const deleteAllBusniess= async (req, res) => {
   try {
     const result = await BusinessProfile.deleteMany({});

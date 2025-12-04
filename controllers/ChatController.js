@@ -12,6 +12,7 @@ export const sendMessage = async (req, res) => {
         const senderId = req.user._id;
         let conversation = await Conversation.findOne({
             participants: { $all: [senderId, receiverId] },
+            status: { $in: ["pending", "accepted"] }
         });
 
         if (!conversation) {
@@ -19,6 +20,7 @@ export const sendMessage = async (req, res) => {
                 participants: [senderId, receiverId],
                 initiatedBy: senderId,
                 status: status || "pending",  // Use status from payload, default to 'pending'
+                messages: []
             });
         } else {
             // Optionally update the status if needed when the conversation already exists
@@ -244,34 +246,25 @@ export const startConversation = async (req, res) => {
     try {
         const { receiverId } = req.params;
         const senderId = req.user._id;
+
         if (!mongoose.Types.ObjectId.isValid(receiverId)) {
             return res.status(400).json({ error: "Invalid receiver ID" });
         }
+
         if (senderId.toString() === receiverId) {
             return res.status(400).json({ error: "Cannot start conversation with yourself" });
         }
-        let conversation = await Conversation.findOne({
-            participants: { $all: [senderId, receiverId] },
-        });
-
-        if (conversation) {
-            return res.status(200).json({
-                message: "Conversation already exists",
-                conversation,
-            });
-        }
-        conversation = await Conversation.create({
+        const conversation = await Conversation.create({
             participants: [senderId, receiverId],
             initiatedBy: senderId,
-            status: "pending", // Default status
-            messages: [], // Empty messages array
+            status: "pending",
+            messages: [],
         });
 
-        // Populate participants for response
         const populatedConversation = await Conversation.findById(conversation._id)
             .populate({
-                path: 'participants',
-                select: 'fullName profilePicture' // Adjust fields as needed
+                path: "participants",
+                select: "fullName profilePicture",
             });
 
         return res.status(201).json({
