@@ -168,7 +168,6 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
-
 export const updateUserProfile = async (req, res) => {
   const { userId } = req.params;
   const {

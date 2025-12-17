@@ -2,76 +2,119 @@
 import Conversation from "../models/conversationModel.js";
 import Message from "../models/messageModel.js";
 import { User } from "../models/UserModel.js";
+import { sendEmail } from "../services/emailService.js";
 import { getReceiverSocketId, io } from "../socket/socket.js";
 import mongoose from "mongoose";
 
 export const sendMessage = async (req, res) => {
-    try {
-        const { message, status } = req.body;
-        const { id: receiverId } = req.params;
-        const senderId = req.user._id;
-        let conversation = await Conversation.findOne({
-            participants: { $all: [senderId, receiverId] },
-            status: { $in: ["pending", "accepted"] }
-        });
+  try {
+    const { message, status } = req.body;
+    const { id: receiverId } = req.params;
+    const senderId = req.user._id;
 
-        if (!conversation) {
-            conversation = await Conversation.create({
-                participants: [senderId, receiverId],
-                initiatedBy: senderId,
-                status: status || "pending",  // Use status from payload, default to 'pending'
-                messages: []
-            });
-        } else {
-            // Optionally update the status if needed when the conversation already exists
-            conversation.status = status || conversation.status;
-            await conversation.save();
-        }
+    // Find or create conversation
+    let conversation = await Conversation.findOne({
+      participants: { $all: [senderId, receiverId] },
+      status: { $in: ["pending", "accepted"] },
+    });
 
-        const newMessage = new Message({
-            senderId,
-            receiverId,
-            message,
-        });
-        await newMessage.save();
-
-        conversation.messages.push(newMessage._id);
-        await conversation.save();
-
-        const receiverSocketId = getReceiverSocketId(receiverId);
-
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit("newMessage", newMessage);
-        }
-        return res.status(200).json({
-            message: "Message sent successfully.",
-            newMessage,
-        });
-    } catch (error) {
-        console.log("Error in sendMessage controller: ", error.message);
-        res.status(500).json({ error: "Internal server error" });
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [senderId, receiverId],
+        initiatedBy: senderId,
+        status: status || "pending",
+        messages: [],
+      });
+    } else {
+      conversation.status = status || conversation.status;
+      await conversation.save();
     }
+
+    // Create new message
+    const newMessage = new Message({
+      senderId,
+      receiverId,
+      message,
+    });
+    await newMessage.save();
+
+    conversation.messages.push(newMessage._id);
+    await conversation.save();
+
+    // Real-time socket notification
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
+
+    // Send email notification
+    const receiver = await User.findById(receiverId);
+    const sender = await User.findById(senderId);
+
+    if (receiver?.email) {
+      const emailSubject = `New Message from ${sender.fullName}`;
+      const emailText = `
+Hello ${receiver.fullName},
+
+You have received a new message from ${sender.fullName}:
+
+"${message}"
+
+Please log in to your account to reply.
+`;
+      sendEmail(receiver.email, emailSubject, emailText)
+        .then(() => console.log("Notification email sent"))
+        .catch((err) => console.error("Error sending email:", err));
+    }
+
+    return res.status(200).json({
+      message: "Message sent successfully.",
+      newMessage,
+    });
+  } catch (error) {
+    console.error("Error in sendMessage controller:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 export const acceptMessageRequest = async (req, res) => {
-    try {
-        const { id: conversationId } = req.params;
-        const receiverId = req.user._id;
+  try {
+    const { id: conversationId } = req.params;
+    const receiverId = req.user._id;
 
-        const conversation = await Conversation.findById(conversationId);
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation)
+      return res.status(404).json({ message: "Conversation not found" });
 
-        if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+    if (!conversation.participants.includes(receiverId))
+      return res.status(403).json({ message: "You are not part of this conversation" });
 
-        if (!conversation.participants.includes(receiverId)) {
-            return res.status(403).json({ message: "You are not a part of this conversation" });
-        }
-        conversation.status = "accepted";
-        await conversation.save();
+    conversation.status = "accepted";
+    await conversation.save();
 
-        res.status(200).json({ message: "Message request accepted", conversation });
-    } catch (error) {
-        console.log("Error in acceptMessageRequest controller: ", error.message);
-        res.status(500).json({ error: "Internal server error" });
+    // Notify the sender via email
+    const senderId = conversation.initiatedBy;
+    const sender = await User.findById(senderId);
+    const receiver = await User.findById(receiverId);
+
+    if (sender?.email) {
+      const emailSubject = `Your message request has been accepted`;
+      const emailText = `
+Hello ${sender.fullName},
+
+Your message request to ${receiver.fullName} has been accepted.
+
+You can now continue the conversation in your account.
+`;
+      sendEmail(sender.email, emailSubject, emailText)
+        .then(() => console.log("Acceptance email sent"))
+        .catch((err) => console.error("Error sending email:", err));
     }
+
+    res.status(200).json({ message: "Message request accepted", conversation });
+  } catch (error) {
+    console.error("Error in acceptMessageRequest controller:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 export const declineMessageRequest = async (req, res) => {
     try {

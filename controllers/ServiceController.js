@@ -1,5 +1,6 @@
 import Service from "../models/ServiceModel.js";
-
+import {User} from '../models/UserModel.js';
+import { sendEmail } from "../services/emailService.js";
 export const createService = async (req, res) => {
   try {
     const {
@@ -45,10 +46,9 @@ export const createService = async (req, res) => {
       status,
       categoryId: categoryId || null,
     };
-
+    
     const service = new Service(serviceData);
     await service.save();
-
     res.status(201).json(service);
   } catch (error) {
     console.log(error);
