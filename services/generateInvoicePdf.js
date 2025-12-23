@@ -1,42 +1,50 @@
 import PDFDocument from "pdfkit";
-
-export function generateInvoicePdf({ invoiceNumber, user, amount, description }) {
+import { PassThrough } from "stream";
+export const generateInvoicePdf = ({ invoiceNumber, user, amount, description }) => {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: "A4", margin: 50 });
-    const buffers = [];
+    try {
+      const doc = new PDFDocument({ size: "A4", margin: 50 });
+      const stream = new PassThrough();
+      const buffers = [];
 
-    doc.on("data", (chunk) => buffers.push(chunk));
-    doc.on("end", () => {
-      const pdfBuffer = Buffer.concat(buffers);
-      if (!pdfBuffer || pdfBuffer.length === 0) {
-        return reject(new Error("Generated PDF is empty"));
-      }
+      doc.on("data", buffers.push.bind(buffers));
+      doc.on("end", () => {
+        const pdfBuffer = Buffer.concat(buffers);
+        resolve(pdfBuffer);
+      });
 
-      resolve(pdfBuffer);
-    });
+      // --- PDF Content ---
+      doc.fontSize(20).text("Ihre Zahlungsbestätigung – Experando", { align: "center" });
+      doc.moveDown();
+      doc.fontSize(12).text(`Hallo ${user.fullName},`);
+      doc.moveDown();
+      doc.text("vielen Dank für Ihre Zahlung auf Experando.");
+      doc.moveDown();
+      doc.text("Hier finden Sie die Details Ihrer Transaktion:");
+      doc.moveDown();
 
-    doc.fontSize(20).text("Invoice", { align: "center" });
-    doc.moveDown();
+      doc.list([
+        `Leistung: ${description}`,
+        `Betrag: €${(amount / 100).toFixed(2)}`,
+        `Zahlungsdatum: ${new Date().toLocaleDateString("de-DE")}`,
+        `Zahlungsmethode: Kreditkarte`,
+      ]);
+      doc.moveDown();
 
-    doc.fontSize(12);
-    doc.text(`Invoice #: ${invoiceNumber}`);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`);
-    doc.moveDown();
+      doc.text(
+        "Ihre Rechnung im PDF-Format befindet sich im Anhang oder kann jederzeit in Ihrem Experando-Konto heruntergeladen werden."
+      );
+      doc.moveDown();
+      doc.text(
+        "Sollten Sie Fragen zu Ihrer Zahlung oder Rechnung haben, stehen wir Ihnen gerne zur Verfügung: office@experando.com"
+      );
+      doc.moveDown();
+      doc.text("Freundliche Grüße");
+      doc.text("Ihr Experando-Team");
 
-    doc.text("Billed To:");
-    doc.text(user.fullName);
-    doc.text(user.email);
-    doc.moveDown();
-
-    doc.text(`Description: ${description}`);
-    doc.text(`Amount Paid: $${(amount / 100).toFixed(2)}`);
-    doc.moveDown();
-
-    doc.text("Payment Status: Paid");
-    doc.moveDown(2);
-
-    doc.text("Thank you for your payment!", { align: "center" });
-
-    doc.end();
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
   });
-}
+};

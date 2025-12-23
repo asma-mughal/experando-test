@@ -45,22 +45,19 @@ export async function createPaymentIntent(req, res) {
     });
 
     await paymentRecord.save();
-
-    // ✅ SEND INVOICE ONLY IF PAYMENT SUCCEEDED
     if (paymentIntent.status === "succeeded") {
-      const pdfBuffer = await generateInvoicePdf({
-        invoiceNumber: paymentRecord._id.toString(),
-        user,
-        amount,
-        description,
+    const pdfBuffer = await generateInvoicePdf({
+    invoiceNumber: paymentRecord._id.toString(),
+    user,
+    amount,
+    description,
       });
 
       await sendInvoiceEmail({
-        to: user.email,
-        subject: "Payment Successful – Invoice Attached",
-        text: `Hi ${user.fullName},\n\nYour payment was successful. Please find your invoice attached.\n\nThank you.`,
-        pdfBuffer,
-      });
+    to: user.email,
+    subject: "Ihre Zahlungsbestätigung – Experando",
+    pdfBuffer,
+  });
     }
 
     return res.status(200).json({
