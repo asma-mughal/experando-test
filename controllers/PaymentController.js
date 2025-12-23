@@ -46,19 +46,26 @@ export async function createPaymentIntent(req, res) {
 
     await paymentRecord.save();
     if (paymentIntent.status === "succeeded") {
-    const pdfBuffer = await generateInvoicePdf({
+  const pdfBuffer = await generateInvoicePdf({
     invoiceNumber: paymentRecord._id.toString(),
     user,
     amount,
     description,
-      });
-
-      await sendInvoiceEmail({
+    paymentMethod: "Kreditkarte", 
+    transactionId: paymentIntent.id,  
+    duration: 1        
+  });
+  await sendInvoiceEmail({
     to: user.email,
     subject: "Ihre Zahlungsbestätigung – Experando",
     pdfBuffer,
+    user,
+    description,
+    amount,
+    paymentMethod: "Kreditkarte"  
   });
-    }
+}
+
 
     return res.status(200).json({
       message: "Payment created successfully",
