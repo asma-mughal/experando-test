@@ -1,11 +1,19 @@
 import PDFDocument from "pdfkit";
 import { PassThrough } from "stream";
-export const generateInvoicePdf = ({ invoiceNumber, user, amount, description }) => {
+export const generateInvoicePdf = ({
+  invoiceNumber,
+  user,
+  amount,
+  description,
+  paymentMethod,
+  transactionId,
+  jobId,
+}) => {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ size: "A4", margin: 50 });
-      const stream = new PassThrough();
       const buffers = [];
+      const stream = new PassThrough();
 
       doc.on("data", buffers.push.bind(buffers));
       doc.on("end", () => {
@@ -13,34 +21,52 @@ export const generateInvoicePdf = ({ invoiceNumber, user, amount, description })
         resolve(pdfBuffer);
       });
 
-      // --- PDF Content ---
-      doc.fontSize(20).text("Ihre Zahlungsbestätigung – Experando", { align: "center" });
+      const invoiceDate = new Date();
+      const paymentDate = invoiceDate;
+      doc.fontSize(20).text("RECHNUNG", { align: "center" });
       doc.moveDown();
-      doc.fontSize(12).text(`Hallo ${user.fullName},`);
-      doc.moveDown();
-      doc.text("vielen Dank für Ihre Zahlung auf Experando.");
-      doc.moveDown();
-      doc.text("Hier finden Sie die Details Ihrer Transaktion:");
-      doc.moveDown();
+      doc.fontSize(10)
+        .text(`RECHNUNGSDATUM: ${invoiceDate.toLocaleDateString("de-DE")}`)
+        .text(`LEISTUNGSDATUM: ${paymentDate.toLocaleDateString("de-DE")}`)
+        .text(`RECHNUNGSNR.: ${invoiceNumber}`)
+        .moveDown();
+      doc.text(`Experando e.U.`)
+        .text(`Neulinggasse 39/3/5`)
+        .text(`1030 Wien`)
+        .text(`FN 621901 k`)
+        .text(`Firmenbuchgericht: Handelsgericht Wien`)
+        .text(`+43 699 10964614`)
+        .text(`office@experando.com`)
+        .moveDown();
+      doc.text("RECHNUNG AN:")
+        .text(`${user.fullName}`)
+        .text(`${user.address || ""}`)
+        .text(`E-Mail: ${user.email}`)
+        .moveDown();
 
-      doc.list([
-        `Leistung: ${description}`,
-        `Betrag: €${(amount / 100).toFixed(2)}`,
-        `Zahlungsdatum: ${new Date().toLocaleDateString("de-DE")}`,
-        `Zahlungsmethode: Kreditkarte`,
-      ]);
-      doc.moveDown();
+      doc.text("Pos. Leistung Menge Einzelpreis Summe", { underline: true })
+        .moveDown(0.5);
 
       doc.text(
-        "Ihre Rechnung im PDF-Format befindet sich im Anhang oder kann jederzeit in Ihrem Experando-Konto heruntergeladen werden."
-      );
-      doc.moveDown();
-      doc.text(
-        "Sollten Sie Fragen zu Ihrer Zahlung oder Rechnung haben, stehen wir Ihnen gerne zur Verfügung: office@experando.com"
-      );
-      doc.moveDown();
-      doc.text("Freundliche Grüße");
-      doc.text("Ihr Experando-Team");
+        `1 ${description} ${jobId ? `für Auftrag Nr. ${jobId}` : ""} 1 €${(amount / 100).toFixed(2)} €${(amount / 100).toFixed(2)}`
+      ).moveDown();
+
+      doc.text(`Gesamtbetrag: €${(amount / 100).toFixed(2)}`).moveDown();
+      doc.text("Zahlungsinformationen", { underline: true })
+        .moveDown(0.5)
+        .text(`Die Zahlung wurde über ${paymentMethod} erfolgreich durchgeführt.`)
+        .text(`Transaktions-ID: ${transactionId}`)
+        .moveDown();
+      doc.text("Hinweise", { underline: true })
+        .moveDown(0.5)
+        .text(
+          "• Experando e.U. wendet die Kleinunternehmerregelung an. Gemäß § 6 Abs 1 Z 27 UStG wird keine Umsatzsteuer berechnet oder ausgewiesen.\n" +
+          "• Diese Rechnung wurde automatisch elektronisch erstellt und ist auch ohne Unterschrift gültig.\n" +
+          "• Die auf dieser Rechnung angeführten Kundendaten wurden vom Nutzer selbst bereitgestellt.\n" +
+          "• Bei Fragen zu dieser Rechnung kontaktieren Sie uns bitte unter office@experando.com\n" +
+          "Vielen Dank für Ihre Nutzung von Experando!\n" +
+          "Finden Sie Ihren passenden Handwerker – schnell & einfach"
+        );
 
       doc.end();
     } catch (error) {
