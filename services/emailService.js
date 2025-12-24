@@ -50,7 +50,7 @@ Freundliche Grüße
 Ihr Experando-Team`,
     attachments: [
       {
-        filename: "invoice.pdf",
+        filename: "invoice_promotion.pdf",
         content: pdfStream,
         contentType: "application/pdf",
       },

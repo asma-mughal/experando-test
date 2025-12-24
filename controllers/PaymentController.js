@@ -2,12 +2,12 @@ import Payment from "../models/PaymentModel.js";
 import Stripe from 'stripe';
 import { User } from "../models/UserModel.js";
 import { sendInvoiceEmail } from "../services/emailService.js";
-import { generateInvoicePdf } from "../services/generateInvoicePdf.js";
+import { generateContactFeeInvoicePdf, generateInvoicePdf } from "../services/generateInvoicePdf.js";
 const stripe = new Stripe('sk_test_51LXDlXLwLT6naIOwvb250nAoZE7weNfRROclxF7OS52R5XnmOlPDUhJymdDTdQT1RYxrOpPadJmQFsteo7TJOdXK00Cx3M3JIr');
 
 export async function createPaymentIntent(req, res) {
   const { currency, customer, paymentMethodId, description, paymentTo } = req.body;
-  const amount = 500; // cents
+  const amount = 500;
 
   try {
     const user = await User.findById(customer);
@@ -46,15 +46,17 @@ export async function createPaymentIntent(req, res) {
 
     await paymentRecord.save();
     if (paymentIntent.status === "succeeded") {
-  const pdfBuffer = await generateInvoicePdf({
-    invoiceNumber: paymentRecord._id.toString(),
-    user,
-    amount,
-    description,
-    paymentMethod: "Kreditkarte", 
-    transactionId: paymentIntent.id,  
-    duration: 1        
-  });
+  const pdfBuffer = await generateContactFeeInvoicePdf({
+  invoiceNumber: `2025-0001`,
+  craftsman: {
+    fullName: user.fullName,
+    address: user.address,
+    email: user.email,
+  },
+  paymentMethod: "Kreditkarte",
+  transactionId: paymentIntent.id,
+});
+
   await sendInvoiceEmail({
     to: user.email,
     subject: "Ihre Zahlungsbestätigung – Experando",

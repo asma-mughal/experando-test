@@ -3,6 +3,8 @@ import { JobPromotion } from "../models/JobPromotion.js";
 import Service from "../models/ServiceModel.js";
 import { User } from "../models/UserModel.js";
 import BusinessProfile from "../models/BusniessModel.js";
+import { generateInvoicePdf } from "../services/generateInvoicePdf.js";
+import { sendInvoiceEmail } from "../services/emailService.js";
 
 const stripe = Stripe(
   "sk_test_51LXDlXLwLT6naIOwvb250nAoZE7weNfRROclxF7OS52R5XnmOlPDUhJymdDTdQT1RYxrOpPadJmQFsteo7TJOdXK00Cx3M3JIr"
@@ -28,9 +30,7 @@ export const subscribeToJobPromotion = async (req, res) => {
   };
 
   const priceId = priceIdMapping[plan.toLowerCase()];
-  if (!priceId) {
-    return res.status(400).json({ error: "Invalid subscription plan" });
-  }
+  if (!priceId) return res.status(400).json({ error: "Invalid subscription plan" });
 
   try {
     let target;
@@ -40,9 +40,7 @@ export const subscribeToJobPromotion = async (req, res) => {
       target = await BusinessProfile.findById(id);
     }
 
-    if (!target) {
-      return res.status(404).json({ error: `${type} not found` });
-    }
+    if (!target) return res.status(404).json({ error: `${type} not found` });
 
     const existingPromotion = await JobPromotion.findOne({
       ...(type === "Service" ? { serviceId: id } : { businessId: id }),
@@ -50,14 +48,12 @@ export const subscribeToJobPromotion = async (req, res) => {
     });
 
     if (existingPromotion) {
-      return res
-        .status(400)
-        .json({ error: `${type} already has an active promotion` });
+      return res.status(400).json({ error: `${type} already has an active promotion` });
     }
 
     let customer;
     if (user?.stripeCustomerId) {
-      customer = await stripe.customers.retrieve(user?.stripeCustomerId);
+      customer = await stripe.customers.retrieve(user.stripeCustomerId);
     } else {
       customer = await stripe.customers.create({
         email: user.email,
@@ -65,28 +61,20 @@ export const subscribeToJobPromotion = async (req, res) => {
         metadata: { userId: userId.toString() },
       });
 
-      await User.findByIdAndUpdate(
-        userId,
-        { stripeCustomerId: customer.id },
-        { new: true }
-      );
+      await User.findByIdAndUpdate(userId, { stripeCustomerId: customer.id }, { new: true });
     }
 
+    const baseUrl = req.headers.origin || "http://localhost:5173"; // fallback
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       customer: customer.id,
       success_url:
         type === "Service"
-          ? `http://localhost:5173/promotion/clientPromotion/${id}?session_id={CHECKOUT_SESSION_ID}&id=${id}&type=${type}&plan=${plan}`
-          : `http://localhost:5173/promotion/craftsmanPromotion/${id}?session_id={CHECKOUT_SESSION_ID}&id=${id}&type=${type}&plan=${plan}`,
-      cancel_url: `http://127.0.0.1:5173/promotion/cancel?id=${id}`,
+          ? `${baseUrl}/promotion/clientPromotion/${id}?session_id={CHECKOUT_SESSION_ID}&id=${id}&type=${type}&plan=${plan}`
+          : `${baseUrl}/promotion/craftsmanPromotion/${id}?session_id={CHECKOUT_SESSION_ID}&id=${id}&type=${type}&plan=${plan}`,
+      cancel_url: `${baseUrl}/promotion/cancel?id=${id}`,
       metadata: {
         plan,
         userId: userId.toString(),
@@ -99,12 +87,9 @@ export const subscribeToJobPromotion = async (req, res) => {
     res.json({ url: session.url });
   } catch (error) {
     console.error("Error creating promotion session:", error);
-    res
-      .status(500)
-      .json({ error: "Internal Server Error", details: error.message });
+    res.status(500).json({ error: "Internal Server Error", details: error.message });
   }
 };
-
 export const subscriptionSuccess = async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.retrieve(
@@ -151,7 +136,32 @@ export const subscriptionSuccess = async (req, res) => {
     } else if (type === "Business") {
       await BusinessProfile.findByIdAndUpdate(id, { promoted: true });
     }
+    const user = await User.findById(userId);
+     if (user) {
+      try {
+        const pdfBuffer = await generateInvoicePdf({
+          invoiceNumber: session.id,
+          user,
+          amount: session.amount_total / 100, 
+          description: `Subscription: ${plan.charAt(0).toUpperCase() + plan.slice(1)} Promotion`,
+          paymentMethod: "Card",
+          transactionId: session.payment_intent,
+          duration: Number(promotionDurationDays),
+        });
 
+        await sendInvoiceEmail({
+          to: user.email,
+          subject: "Your Promotion Subscription – Thank you",
+          pdfBuffer,
+          user,
+          description: `Subscription: ${plan.charAt(0).toUpperCase() + plan.slice(1)} Promotion`,
+          amount: session.amount_total / 100,
+          paymentMethod: "Card",
+        });
+      } catch (emailError) {
+        console.error("Error sending promotion invoice email:", emailError);
+      }
+    }
     res.status(200).json({ message: `${type} promoted successfully` });
   } catch (error) {
     console.error("Error in promotion success:", error);
@@ -161,7 +171,6 @@ export const subscriptionSuccess = async (req, res) => {
     });
   }
 };
-
 const cancelStripeSubscription = async (subscriptionId) => {
   try {
     const canceledSubscription = await stripe.subscriptions.cancel(
@@ -205,7 +214,6 @@ const cancelStripeSubscription = async (subscriptionId) => {
     return false;
   }
 };
-
 export const cleanupExpiredPromotions = async () => {
   try {
     const now = new Date();
