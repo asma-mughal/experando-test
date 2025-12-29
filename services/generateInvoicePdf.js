@@ -4,7 +4,7 @@ export const generateInvoicePdf = ({
   invoiceNumber,
   user,
   amount,
-  description,
+  description, // e.g., { type: "contactFee", jobId: "123" } or { type: "promotion", durationDays: 7, jobId: "123" }
   paymentMethod,
   transactionId,
 }) => {
@@ -21,14 +21,17 @@ export const generateInvoicePdf = ({
       });
 
       const invoiceDate = new Date();
-      const paymentDate = invoiceDate;
+      const paymentDate = invoiceDate; // Using same date for alignment
+
       doc.fontSize(20).text("RECHNUNG", { align: "center" });
       doc.moveDown();
+
       doc.fontSize(10)
         .text(`RECHNUNGSDATUM: ${invoiceDate.toLocaleDateString("de-DE")}`)
         .text(`LEISTUNGSDATUM: ${paymentDate.toLocaleDateString("de-DE")}`)
         .text(`RECHNUNGSNR.: ${invoiceNumber}`)
         .moveDown();
+
       doc.text(`Experando e.U.`)
         .text(`Neulinggasse 39/3/5`)
         .text(`1030 Wien`)
@@ -37,6 +40,7 @@ export const generateInvoicePdf = ({
         .text(`+43 699 10964614`)
         .text(`office@experando.com`)
         .moveDown();
+
       doc.text("RECHNUNG AN:")
         .text(`${user.fullName}`)
         .text(`${user.address || ""}`)
@@ -46,22 +50,33 @@ export const generateInvoicePdf = ({
       doc.text("Pos. Leistung Menge Einzelpreis Summe", { underline: true })
         .moveDown(0.5);
 
+      // Generate more specific service description
+      let serviceDescription = "";
+      if (description?.type === "contactFee" && description.jobId) {
+        serviceDescription = `Kontaktgebühren für den Auftrag ${description.jobId}`;
+      } else if (description?.type === "promotion" && description.jobId && description.durationDays) {
+        serviceDescription = `Hervorhebegebühren für ${description.durationDays} Tage für die Anzeige ${description.jobId}`;
+      } else {
+        serviceDescription = "Leistung";
+      }
+
       doc.text(
-        ` 1 €${(amount / 100).toFixed(2)} €${(amount / 100).toFixed(2)}`
+        `1 ${serviceDescription} €${(amount / 100).toFixed(2)} €${(amount / 100).toFixed(2)}`
       ).moveDown();
 
       doc.text(`Gesamtbetrag: €${(amount / 100).toFixed(2)}`).moveDown();
+
       doc.text("Zahlungsinformationen", { underline: true })
         .moveDown(0.5)
         .text(`Die Zahlung wurde über ${paymentMethod} erfolgreich durchgeführt.`)
         .text(`Transaktions-ID: ${transactionId}`)
         .moveDown();
+
       doc.text("Hinweise", { underline: true })
         .moveDown(0.5)
         .text(
           "• Experando e.U. wendet die Kleinunternehmerregelung an. Gemäß § 6 Abs 1 Z 27 UStG wird keine Umsatzsteuer berechnet oder ausgewiesen.\n" +
           "• Diese Rechnung wurde automatisch elektronisch erstellt und ist auch ohne Unterschrift gültig.\n" +
-          "• Die auf dieser Rechnung angeführten Kundendaten wurden vom Nutzer selbst bereitgestellt.\n" +
           "• Bei Fragen zu dieser Rechnung kontaktieren Sie uns bitte unter office@experando.com\n" +
           "Vielen Dank für Ihre Nutzung von Experando!\n" +
           "Finden Sie Ihren passenden Handwerker – schnell & einfach"
@@ -73,6 +88,7 @@ export const generateInvoicePdf = ({
     }
   });
 };
+
 export const generateContactFeeInvoicePdf = ({
   invoiceNumber,      
   craftsman,      

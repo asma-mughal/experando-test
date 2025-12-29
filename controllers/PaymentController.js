@@ -2,7 +2,7 @@ import Payment from "../models/PaymentModel.js";
 import Stripe from 'stripe';
 import { User } from "../models/UserModel.js";
 import { sendInvoiceEmail } from "../services/emailService.js";
-import { generateContactFeeInvoicePdf, generateInvoicePdf } from "../services/generateInvoicePdf.js";
+import { generateContactFeeInvoicePdf } from "../services/generateInvoicePdf.js";
 const stripe = new Stripe('sk_test_51LXDlXLwLT6naIOwvb250nAoZE7weNfRROclxF7OS52R5XnmOlPDUhJymdDTdQT1RYxrOpPadJmQFsteo7TJOdXK00Cx3M3JIr');
 
 export async function createPaymentIntent(req, res) {
